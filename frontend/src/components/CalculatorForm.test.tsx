@@ -83,6 +83,24 @@ describe('CalculatorForm', () => {
     expect(screen.getByRole('status')).toHaveTextContent('3')
   })
 
+  it('locks the inputs while in flight so a late result cannot follow an edit', async () => {
+    let resolve!: (result: CalculateResult) => void
+    calculateMock.mockReturnValue(new Promise((r) => (resolve = r)))
+    render(<CalculatorForm />)
+    const user = await fillAndSubmit('1', 'add', '2')
+
+    expect(screen.getByLabelText('First number')).toBeDisabled()
+    expect(screen.getByLabelText('Operation')).toBeDisabled()
+    expect(screen.getByLabelText('Second number')).toBeDisabled()
+    await user.type(screen.getByLabelText('Second number'), '5')
+    expect(screen.getByLabelText('Second number')).toHaveValue('2')
+
+    resolve({ kind: 'success', result: 3 })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('3')
+    expect(screen.getByLabelText('Second number')).toBeEnabled()
+  })
+
   it.each<[string, CalculateResult, string]>([
     [
       'division by zero',

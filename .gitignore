@@ -19,3 +19,6 @@ frontend/coverage/
 .env
 .env.*
 !.env.example
+
+# Claude Code local config
+.claude/
