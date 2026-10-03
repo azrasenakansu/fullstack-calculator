@@ -66,3 +66,15 @@ jobs:
 
       - name: Test
         run: npm test
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Validate Compose file
+        run: docker compose config --quiet
+
+      - name: Build images
+        run: docker compose build

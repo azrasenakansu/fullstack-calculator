@@ -198,7 +198,7 @@ curl -s -X POST http://localhost:8080/api/v1/calculate \
 
 ## Testing
 
-GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend checks on every push and pull request to `main`.
+GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend checks and verifies that the Docker images build, on every push and pull request to `main`.
 
 ### Backend
 
