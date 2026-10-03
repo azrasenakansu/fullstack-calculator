@@ -12,6 +12,7 @@ Supported operations: addition, subtraction, multiplication and division.
 | Frontend | React 19, TypeScript, Vite, plain CSS                                         |
 | Tests    | Go `testing` + `net/http/httptest`; Vitest + React Testing Library + jsdom    |
 | Lint     | `go vet`, `gofmt`; oxlint                                                     |
+| Runtime  | Docker Compose; nginx serves the built frontend and proxies `/api` to the backend |
 
 ## Project structure
 
@@ -35,8 +36,8 @@ frontend/
 
 ### Prerequisites
 
-- **Go 1.22+**
-- **Node.js 22 or 24 LTS** (with npm)
+- **Local development:** Go 1.22+ and Node.js 22 or 24 LTS (with npm)
+- **Docker:** Docker with Docker Compose
 
 ### Clone the repository
 
@@ -65,6 +66,16 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. During development, Vite proxies every `/api` request to `http://localhost:8080`, so the frontend and backend share an origin and no CORS configuration is needed.
+
+### Run with Docker
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+The app is available at `http://localhost:3000`. Only the frontend is exposed to the host; nginx serves the built app and proxies `/api` to the internal backend service.
 
 ## API
 
@@ -251,12 +262,11 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 - **Input format:** the frontend accepts plain decimals only (`12`, `-3.5`, `.5`). Exponent notation (`1e5`), decimal commas (`1,5`), hex, `Infinity` and `NaN` are rejected. The API accepts any finite JSON number.
 - **Stateless:** each request is independent. There is no history, persistence or authentication.
 - **Duplicated operation list:** the frontend (`src/operations.ts`) and backend (`internal/calc`) each define the supported operations. Adding an operation means updating both.
-- **Not included:** request body size limits, health checks, CORS (not needed with the dev proxy), and production deployment.
+- **Not included:** request body size limits, health checks, and CORS (not needed with the dev proxy).
 
 ## Possible improvements
 
 - **More operations:** exponentiation, square root and percentage. Each needs one registry entry in `internal/calc`. The UI would also need an `arity` field in `operations.ts` so it can show one input or two.
-- **Docker:** a multi-stage build where the Go server also serves the built frontend from `frontend/dist`, so the whole stack runs from one image on one origin.
 - **Operational hardening:** request size limits, a health check endpoint, and graceful shutdown.
 
 ## AI usage
