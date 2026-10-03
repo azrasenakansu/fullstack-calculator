@@ -24,6 +24,7 @@ func TestCalculateEndpoint(t *testing.T) {
 		{name: "trailing whitespace is allowed", body: "{\"operation\":\"add\",\"operands\":[1,1]}\n", wantStatus: http.StatusOK, wantResult: 2},
 
 		{name: "empty body", body: ``, wantStatus: http.StatusBadRequest, wantCode: codeInvalidJSON},
+		{name: "null body", body: `null`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidJSON},
 		{name: "malformed JSON", body: `{"operation":"add",`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidJSON},
 		{name: "string operand", body: `{"operation":"add","operands":["1",2]}`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidJSON},
 		{name: "null operand", body: `{"operation":"add","operands":[5,null]}`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidJSON},

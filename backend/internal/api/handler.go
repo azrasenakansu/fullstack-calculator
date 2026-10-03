@@ -51,8 +51,9 @@ func handleCalculate(w http.ResponseWriter, r *http.Request) {
 func decodeRequest(body io.Reader) (string, []float64, error) {
 	dec := json.NewDecoder(body)
 
-	var req calculateRequest
-	if err := dec.Decode(&req); err != nil {
+	// Decoding into a pointer leaves it nil for a top-level JSON null.
+	var req *calculateRequest
+	if err := dec.Decode(&req); err != nil || req == nil {
 		return "", nil, errors.New("request body must be a JSON object with an operation and numeric operands")
 	}
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
