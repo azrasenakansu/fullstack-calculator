@@ -20,6 +20,9 @@ func TestCalculateEndpoint(t *testing.T) {
 		{name: "subtract", body: `{"operation":"subtract","operands":[10,4]}`, wantStatus: http.StatusOK, wantResult: 6},
 		{name: "multiply", body: `{"operation":"multiply","operands":[2.5,-4]}`, wantStatus: http.StatusOK, wantResult: -10},
 		{name: "divide", body: `{"operation":"divide","operands":[10,4]}`, wantStatus: http.StatusOK, wantResult: 2.5},
+		{name: "power", body: `{"operation":"power","operands":[2,3]}`, wantStatus: http.StatusOK, wantResult: 8},
+		{name: "sqrt", body: `{"operation":"sqrt","operands":[25]}`, wantStatus: http.StatusOK, wantResult: 5},
+		{name: "percentage", body: `{"operation":"percentage","operands":[20,150]}`, wantStatus: http.StatusOK, wantResult: 30},
 		{name: "zero is a valid operand", body: `{"operation":"multiply","operands":[0,7]}`, wantStatus: http.StatusOK, wantResult: 0},
 		{name: "trailing whitespace is allowed", body: "{\"operation\":\"add\",\"operands\":[1,1]}\n", wantStatus: http.StatusOK, wantResult: 2},
 
@@ -38,6 +41,9 @@ func TestCalculateEndpoint(t *testing.T) {
 		{name: "too many operands", body: `{"operation":"add","operands":[1,2,3]}`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidOperandCount},
 		{name: "division by zero", body: `{"operation":"divide","operands":[1,0]}`, wantStatus: http.StatusBadRequest, wantCode: codeDivisionByZero},
 		{name: "overflow", body: `{"operation":"multiply","operands":[1e308,10]}`, wantStatus: http.StatusBadRequest, wantCode: codeResultOutOfRange},
+		{name: "sqrt with two operands", body: `{"operation":"sqrt","operands":[4,2]}`, wantStatus: http.StatusBadRequest, wantCode: codeInvalidOperandCount},
+		{name: "sqrt of negative", body: `{"operation":"sqrt","operands":[-1]}`, wantStatus: http.StatusBadRequest, wantCode: codeUndefinedResult},
+		{name: "power with undefined result", body: `{"operation":"power","operands":[-8,0.5]}`, wantStatus: http.StatusBadRequest, wantCode: codeUndefinedResult},
 	}
 
 	router := NewRouter()

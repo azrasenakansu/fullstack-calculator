@@ -9,4 +9,5 @@ var (
 	ErrOperandCount     = errors.New("invalid number of operands")
 	ErrDivisionByZero   = errors.New("division by zero")
 	ErrNonFiniteResult  = errors.New("result is out of range")
+	ErrUndefinedResult  = errors.New("result is undefined")
 )

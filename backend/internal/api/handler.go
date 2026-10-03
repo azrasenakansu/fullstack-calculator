@@ -81,6 +81,8 @@ func errorStatus(err error) (int, string) {
 		return http.StatusBadRequest, codeDivisionByZero
 	case errors.Is(err, calc.ErrNonFiniteResult):
 		return http.StatusBadRequest, codeResultOutOfRange
+	case errors.Is(err, calc.ErrUndefinedResult):
+		return http.StatusBadRequest, codeUndefinedResult
 	default:
 		return http.StatusInternalServerError, codeInternalError
 	}

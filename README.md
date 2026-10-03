@@ -2,7 +2,7 @@
 
 A calculator with a **React + TypeScript** frontend and a **Go** REST backend. All calculator operations are performed by the backend API; the frontend only validates input and formats results for display.
 
-Supported operations: addition, subtraction, multiplication and division.
+Supported operations: addition, subtraction, multiplication, division, exponentiation, square root and percentage.
 
 ## Tech stack
 
@@ -108,12 +108,17 @@ The app is available at `http://localhost:3000`. Only the frontend is exposed to
 
 ### Supported operations
 
-| `operation` | Operands | Result    |
-| ----------- | -------- | --------- |
-| `add`       | `[a, b]` | `a + b`   |
-| `subtract`  | `[a, b]` | `a - b`   |
-| `multiply`  | `[a, b]` | `a × b`   |
-| `divide`    | `[a, b]` | `a ÷ b`   |
+| `operation`  | Operands              | Result                     | Example            |
+| ------------ | --------------------- | -------------------------- | ------------------ |
+| `add`        | `[a, b]`              | `a + b`                    | `[2, 3]` → `5`     |
+| `subtract`   | `[a, b]`              | `a - b`                    | `[10, 4]` → `6`    |
+| `multiply`   | `[a, b]`              | `a × b`                    | `[6, 7]` → `42`    |
+| `divide`     | `[a, b]`              | `a ÷ b`                    | `[10, 4]` → `2.5`  |
+| `power`      | `[base, exponent]`    | `base^exponent`            | `[2, 3]` → `8`     |
+| `sqrt`       | `[value]`             | `√value`                   | `[25]` → `5`       |
+| `percentage` | `[percentage, value]` | `percentage × value / 100` | `[20, 150]` → `30` |
+
+Undefined results are rejected: the square root of a negative number, zero raised to a negative power, and a negative base with a fractional exponent. `power` follows Go's `math.Pow` otherwise, so `[0, 0]` → `1`.
 
 ### Error codes
 
@@ -123,7 +128,8 @@ The app is available at `http://localhost:3000`. Only the frontend is exposed to
 | `unknown_operation`     | 400    | `operation` is missing or not supported                                                |
 | `invalid_operand_count` | 400    | Wrong number of operands for the operation                                             |
 | `division_by_zero`      | 400    | Divisor is `0`                                                                         |
-| `result_out_of_range`   | 400    | Result overflows to ±Infinity or is NaN                                                |
+| `result_out_of_range`   | 400    | Result overflows to ±Infinity                                                          |
+| `undefined_result`      | 400    | Result is mathematically undefined, e.g. `sqrt` of a negative number                    |
 | `internal_error`        | 500    | Unexpected server error                                                                |
 
 Responses from the router itself, such as `405 Method Not Allowed` for `GET /api/v1/calculate` or `404` for unknown paths, are Go's default plain-text responses.
@@ -213,7 +219,7 @@ go tool cover -func=coverage.out
 go tool cover -html=coverage.out   # optional: browse in the browser
 ```
 
-- `internal/calc`: table-driven tests for every operation, division by zero (including `-0`), unknown operations, wrong operand counts, and overflow.
+- `internal/calc`: table-driven tests for every operation, division by zero (including `-0`), undefined results (negative `sqrt`, invalid `power` domains), unknown operations, wrong operand counts, and overflow.
 - `internal/api`: table-driven `httptest` tests through the real router. They cover success responses, `Content-Type`, every error code, malformed, `null` and trailing JSON, `null` operands, and `405` for other methods.
 
 ### Frontend
@@ -228,24 +234,24 @@ npm run coverage   # HTML report in frontend/coverage/index.html
 
 - `lib/number.test.ts`: which inputs are accepted and rejected, and how results are rounded for display.
 - `api/calculator.test.ts`: the request format, successful results, API errors, network failures, and unexpected responses (non-JSON or the wrong shape).
-- `components/CalculatorForm.test.tsx`: calls the API with the parsed numbers and shows the result, shows field errors without calling the API, shows the loading state, maps each error kind to a message, clears the old result on edit, and locks the inputs while a request is in flight.
+- `components/CalculatorForm.test.tsx`: calls the API with the parsed numbers and shows the result, renders a single input for `sqrt`, shows field errors without calling the API, shows the loading state, maps each error kind to a message, clears the old result on edit, and locks the inputs while a request is in flight.
 
 ### Coverage results
 
 | Layer    | Scope                    | Coverage                              |
 | -------- | ------------------------ | ------------------------------------- |
 | Backend  | `internal/calc`          | 100%                                  |
-| Backend  | `internal/api`           | 90.7%                                 |
-| Backend  | Total                    | 79.4%                                 |
-| Frontend | All files                | 98.3% statements, 100% branches       |
+| Backend  | `internal/api`           | 90.9%                                 |
+| Backend  | Total                    | 80.3%                                 |
+| Frontend | All files                | 98.6% statements, 100% branches       |
 
-All 47 frontend tests pass.
+All 55 frontend tests pass.
 
 The Go total is lower because `cmd/server` contains only startup code and has no tests. The uncovered lines in `internal/api` are the `500` fallback, which no current domain error triggers, and the log line for a failed response write. On the frontend, `App.tsx` (a layout wrapper) is the only file below 100%.
 
 ## Design decisions
 
-- **One endpoint with an `operands` array.** Every operation is handled by one decode, validate and respond path. Each operation declares its arity, so `len(operands)` is checked against it. A missing operand is never silently treated as `0`, which can happen with fixed `a`/`b` fields. Single-operand operations such as square root can be added without changing the endpoint.
+- **One endpoint with an `operands` array.** Every operation is handled by one decode, validate and respond path. Each operation declares its arity, so `len(operands)` is checked against it. A missing operand is never silently treated as `0`, which can happen with fixed `a`/`b` fields. Operations with one operand (`sqrt`) and two operands share the same endpoint, and the form renders one input per operand based on each operation's `arity` in `operations.ts`.
 - **Domain logic is independent of HTTP.** `internal/calc` exposes one function, `Calculate(operation, operands)`, and returns sentinel errors. `internal/api` maps them to status codes and error codes in one `switch`. The math can be tested without HTTP, and HTTP behaviour can be tested separately.
 - **Go standard library only.** The routing patterns added in Go 1.22 (`"POST /api/v1/calculate"`) cover routing and method matching. A framework would add dependencies without adding value at this size.
 - **HTTP 400 for every client error.** Errors are told apart by a machine-readable `code`, not by different status codes. Only unexpected failures return 500, and their details are logged on the server, not sent to the client.
@@ -258,7 +264,7 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 ## Assumptions and limitations
 
 - **Precision:** both layers use IEEE-754 doubles (Go `float64`, JS `number`). The API returns the raw value, for example `0.1 + 0.2 = 0.30000000000000004`. The UI rounds to 12 significant digits **for display only**, so the same calculation shows `0.3`.
-- **Range:** results that overflow to ±Infinity or produce NaN are rejected with `result_out_of_range`. Very large or very small results are displayed in exponent notation, for example `1e+21`.
+- **Range:** results that overflow to ±Infinity are rejected with `result_out_of_range`; results that would be NaN are rejected with `undefined_result`. Very large or very small results are displayed in exponent notation, for example `1e+21`.
 - **Input format:** the frontend accepts plain decimals only (`12`, `-3.5`, `.5`). Exponent notation (`1e5`), decimal commas (`1,5`), hex, `Infinity` and `NaN` are rejected. The API accepts any finite JSON number.
 - **Stateless:** each request is independent. There is no history, persistence or authentication.
 - **Duplicated operation list:** the frontend (`src/operations.ts`) and backend (`internal/calc`) each define the supported operations. Adding an operation means updating both.
@@ -266,7 +272,6 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 
 ## Possible improvements
 
-- **More operations:** exponentiation, square root and percentage. Each needs one registry entry in `internal/calc`. The UI would also need an `arity` field in `operations.ts` so it can show one input or two.
 - **Operational hardening:** request size limits, a health check endpoint, and graceful shutdown.
 
 ## AI usage

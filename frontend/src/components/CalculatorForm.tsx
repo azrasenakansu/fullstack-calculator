@@ -16,12 +16,17 @@ function errorMessage(result: Exclude<CalculateResult, { kind: 'success' }>): st
     case 'api-error':
       if (result.code === 'division_by_zero') return 'Cannot divide by zero.'
       if (result.code === 'result_out_of_range') return 'Result is too large to represent.'
+      if (result.code === 'undefined_result') return 'The result is undefined for these numbers.'
       return result.message
     case 'network-error':
       return "Can't reach the calculator service."
     case 'unexpected-response':
       return 'Something went wrong. Please try again.'
   }
+}
+
+function isUnary(operation: Operation): boolean {
+  return OPERATIONS.some((op) => op.value === operation && op.arity === 1)
 }
 
 export function CalculatorForm() {
@@ -32,22 +37,25 @@ export function CalculatorForm() {
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
 
   const loading = status.kind === 'loading'
+  const unary = isUnary(operation)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    // The hidden second input is ignored for unary operations.
     const parsedA = parseNumber(a)
-    const parsedB = parseNumber(b)
+    const parsedB = unary ? undefined : parseNumber(b)
     setFieldErrors({
       a: parsedA.ok ? undefined : parsedA.error,
-      b: parsedB.ok ? undefined : parsedB.error,
+      b: parsedB && !parsedB.ok ? parsedB.error : undefined,
     })
-    if (!parsedA.ok || !parsedB.ok) {
+    if (!parsedA.ok || (parsedB && !parsedB.ok)) {
       return
     }
 
     setStatus({ kind: 'loading' })
-    const result = await calculate(operation, [parsedA.value, parsedB.value])
+    const operands = parsedB ? [parsedA.value, parsedB.value] : [parsedA.value]
+    const result = await calculate(operation, operands)
     setStatus(
       result.kind === 'success'
         ? { kind: 'success', result: result.result }
@@ -92,7 +100,12 @@ export function CalculatorForm() {
             id="operation"
             value={operation}
             onChange={(e) => {
-              setOperation(e.target.value as Operation)
+              const next = e.target.value as Operation
+              setOperation(next)
+              // The second input is hidden for unary operations; drop its error but keep its value.
+              if (isUnary(next)) {
+                setFieldErrors((errors) => ({ ...errors, b: undefined }))
+              }
               resetStatus()
             }}
           >
@@ -104,27 +117,29 @@ export function CalculatorForm() {
           </select>
         </div>
 
-        <div className="field">
-          <label htmlFor="operand-b">Second number</label>
-          <input
-            id="operand-b"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            value={b}
-            onChange={(e) => {
-              setB(e.target.value)
-              resetStatus()
-            }}
-            aria-invalid={fieldErrors.b ? true : undefined}
-            aria-describedby={fieldErrors.b ? 'operand-b-error' : undefined}
-          />
-          {fieldErrors.b && (
-            <p id="operand-b-error" className="field-error">
-              {fieldErrors.b}
-            </p>
-          )}
-        </div>
+        {!unary && (
+          <div className="field">
+            <label htmlFor="operand-b">Second number</label>
+            <input
+              id="operand-b"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={b}
+              onChange={(e) => {
+                setB(e.target.value)
+                resetStatus()
+              }}
+              aria-invalid={fieldErrors.b ? true : undefined}
+              aria-describedby={fieldErrors.b ? 'operand-b-error' : undefined}
+            />
+            {fieldErrors.b && (
+              <p id="operand-b-error" className="field-error">
+                {fieldErrors.b}
+              </p>
+            )}
+          </div>
+        )}
       </fieldset>
 
       <button type="submit" disabled={loading}>

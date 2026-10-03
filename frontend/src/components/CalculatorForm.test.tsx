@@ -32,8 +32,37 @@ describe('CalculatorForm', () => {
       'subtract',
       'multiply',
       'divide',
+      'power',
+      'sqrt',
+      'percentage',
     ])
     expect(screen.getByRole('button', { name: 'Calculate' })).toBeEnabled()
+  })
+
+  it.each([
+    ['power', [2, 3]],
+    ['percentage', [20, 150]],
+  ])('sends both operands for %s', async (operation, operands) => {
+    calculateMock.mockResolvedValue({ kind: 'success', result: 0 })
+    render(<CalculatorForm />)
+
+    await fillAndSubmit(String(operands[0]), operation, String(operands[1]))
+
+    expect(calculateMock).toHaveBeenCalledWith(operation, operands)
+  })
+
+  it('renders one input for sqrt and sends a single operand', async () => {
+    calculateMock.mockResolvedValue({ kind: 'success', result: 5 })
+    render(<CalculatorForm />)
+    const user = userEvent.setup()
+    // An invalid value left in the second input must not block a unary calculation.
+    await user.type(screen.getByLabelText('Second number'), 'abc')
+
+    await fillAndSubmit('25', 'sqrt', '')
+
+    expect(screen.queryByLabelText('Second number')).not.toBeInTheDocument()
+    expect(calculateMock).toHaveBeenCalledWith('sqrt', [25])
+    expect(await screen.findByRole('status')).toHaveTextContent('5')
   })
 
   it('sends parsed operands to the API and shows the result', async () => {
@@ -101,6 +130,20 @@ describe('CalculatorForm', () => {
     expect(screen.getByLabelText('Second number')).toBeEnabled()
   })
 
+  it('clears the hidden second-operand error when switching to sqrt but keeps its value', async () => {
+    render(<CalculatorForm />)
+    const user = await fillAndSubmit('1', 'add', 'abc')
+    expect(screen.getByLabelText('Second number')).toHaveAttribute('aria-invalid', 'true')
+
+    await user.selectOptions(screen.getByLabelText('Operation'), 'sqrt')
+    await user.selectOptions(screen.getByLabelText('Operation'), 'add')
+
+    const second = screen.getByLabelText('Second number')
+    expect(second).toHaveValue('abc')
+    expect(second).not.toHaveAttribute('aria-invalid')
+    expect(screen.queryByText('Enter a valid number, like 12 or -3.5.')).not.toBeInTheDocument()
+  })
+
   it.each<[string, CalculateResult, string]>([
     [
       'division by zero',
@@ -111,6 +154,11 @@ describe('CalculatorForm', () => {
       'an out-of-range result',
       { kind: 'api-error', code: 'result_out_of_range', message: 'result is out of range' },
       'Result is too large to represent.',
+    ],
+    [
+      'an undefined result',
+      { kind: 'api-error', code: 'undefined_result', message: 'result is undefined' },
+      'The result is undefined for these numbers.',
     ],
     [
       'other API errors',

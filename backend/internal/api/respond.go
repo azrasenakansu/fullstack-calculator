@@ -13,6 +13,7 @@ const (
 	codeInvalidOperandCount = "invalid_operand_count"
 	codeDivisionByZero      = "division_by_zero"
 	codeResultOutOfRange    = "result_out_of_range"
+	codeUndefinedResult     = "undefined_result"
 	codeInternalError       = "internal_error"
 )
 
