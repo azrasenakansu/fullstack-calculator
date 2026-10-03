@@ -8,6 +8,9 @@ export type CalculateResult =
 
 const CALCULATE_URL = '/api/v1/calculate'
 
+// Gateway statuses returned by the dev or nginx proxy when the backend is unreachable.
+const UNAVAILABLE_STATUSES = new Set([502, 503, 504])
+
 // calculate sends one calculation to the backend. It never throws: every
 // outcome, including network failures, is returned as a CalculateResult.
 export async function calculate(
@@ -22,6 +25,9 @@ export async function calculate(
       body: JSON.stringify({ operation, operands }),
     })
   } catch {
+    return { kind: 'network-error' }
+  }
+  if (UNAVAILABLE_STATUSES.has(response.status)) {
     return { kind: 'network-error' }
   }
 

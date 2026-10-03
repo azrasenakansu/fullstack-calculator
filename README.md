@@ -251,7 +251,7 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 - **HTTP 400 for every client error.** Errors are told apart by a machine-readable `code`, not by different status codes. Only unexpected failures return 500, and their details are logged on the server, not sent to the client.
 - **Strict request decoding.** The body must be exactly one JSON object. `null` bodies, `null` operands and trailing data are rejected, so ambiguous input never reaches the calculator.
 - **The backend owns the math rules.** The frontend only checks that each input is a number. Rules like division by zero are enforced and reported by the backend alone.
-- **The API client never throws.** `calculate()` returns one of `success`, `api-error`, `network-error` or `unexpected-response` (such as a proxy's HTML error page). The component handles each case explicitly.
+- **The API client never throws.** `calculate()` returns one of `success`, `api-error`, `network-error` or `unexpected-response` (a non-JSON body or an unexpected response shape). HTTP 502, 503 and 504 from the proxy mean the service is unavailable, so they map to `network-error`. The component handles each case explicitly.
 - **A form instead of a keypad.** Two inputs and an operation selector map directly to one API request. A keypad would require a state machine for chaining and operator precedence, which is out of scope.
 - **Local React state only.** The app is a single form, so it uses `useState` with no global store and no UI library. Text inputs use `inputMode="decimal"`, which shows a numeric keyboard on mobile, without the inconsistent browser validation of `type="number"`.
 

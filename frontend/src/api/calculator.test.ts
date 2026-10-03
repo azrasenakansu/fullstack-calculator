@@ -58,7 +58,17 @@ describe('calculate', () => {
   })
 
   it.each([
-    ['a non-JSON body', new Response('<html>Bad Gateway</html>', { status: 502 })],
+    ['502 with an HTML body', new Response('<html>Bad Gateway</html>', { status: 502 })],
+    ['503 with an empty body', new Response(null, { status: 503 })],
+    ['504 with a JSON body', jsonResponse(504, { error: { code: 'x', message: 'y' } })],
+  ])('reports a network error when the proxy returns %s', async (_, response) => {
+    mockFetch(response)
+
+    expect(await calculate('add', [1, 2])).toEqual({ kind: 'network-error' })
+  })
+
+  it.each([
+    ['a non-JSON body', new Response('<html>Internal Server Error</html>', { status: 500 })],
     ['a success response without a numeric result', jsonResponse(200, {})],
     ['an error response without the error shape', jsonResponse(400, { message: 'nope' })],
     ['an error-shaped body with a success status', jsonResponse(200, { error: { code: 'x', message: 'y' } })],
