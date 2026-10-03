@@ -187,6 +187,8 @@ curl -s -X POST http://localhost:8080/api/v1/calculate \
 
 ## Testing
 
+GitHub Actions (`.github/workflows/ci.yml`) runs the backend and frontend checks on every push and pull request to `main`.
+
 ### Backend
 
 ```bash
@@ -255,7 +257,6 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 
 - **More operations:** exponentiation, square root and percentage. Each needs one registry entry in `internal/calc`. The UI would also need an `arity` field in `operations.ts` so it can show one input or two.
 - **Docker:** a multi-stage build where the Go server also serves the built frontend from `frontend/dist`, so the whole stack runs from one image on one origin.
-- **CI:** run lint, tests and coverage for both layers on every push.
 - **Operational hardening:** request size limits, a health check endpoint, and graceful shutdown.
 
 ## AI usage
