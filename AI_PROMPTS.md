@@ -2,7 +2,7 @@
 
 I used an AI coding assistant (Claude Code) as a senior reviewer and pair-programming aid during this assignment. It analysed the requirements, reviewed my design decisions, proposed implementation plans, supported implementation, and ran verification checks. I made the final architectural and implementation decisions at each step.
 
-This document contains the main prompts that materially guided the work. I also had smaller discussion and follow-up exchanges with the assistant while evaluating trade-offs and refining decisions; those are intentionally omitted for readability. The prompts below appear as I sent them, and each includes a short note on its outcome.
+This document is a selected, representative and non-exhaustive set of prompts from the development process, covering the core work from requirements analysis to the first complete README. Later follow-up prompts, such as those for CI, Docker, the optional operations and smaller refinements, are intentionally omitted for readability, as are shorter discussion exchanges while I evaluated trade-offs. The prompts below appear as I sent them, and each includes a short note on its outcome.
 
 ---
 

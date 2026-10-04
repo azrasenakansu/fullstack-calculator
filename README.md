@@ -258,7 +258,7 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 - **Strict request decoding.** The body must be exactly one JSON object. `null` bodies, `null` operands and trailing data are rejected, so ambiguous input never reaches the calculator.
 - **The backend owns the math rules.** The frontend only checks that each input is a number. Rules like division by zero are enforced and reported by the backend alone.
 - **The API client never throws.** `calculate()` returns one of `success`, `api-error`, `network-error` or `unexpected-response` (a non-JSON body or an unexpected response shape). HTTP 502, 503 and 504 from the proxy mean the service is unavailable, so they map to `network-error`. The component handles each case explicitly.
-- **A form instead of a keypad.** Two inputs and an operation selector map directly to one API request. A keypad would require a state machine for chaining and operator precedence, which is out of scope.
+- **A form instead of a keypad.** One or two inputs and an operation selector map directly to one API request. A keypad would require a state machine for chaining and operator precedence, which is out of scope.
 - **Local React state only.** The app is a single form, so it uses `useState` with no global store and no UI library. Text inputs use `inputMode="decimal"`, which shows a numeric keyboard on mobile, without the inconsistent browser validation of `type="number"`.
 
 ## Assumptions and limitations
@@ -268,7 +268,7 @@ The Go total is lower because `cmd/server` contains only startup code and has no
 - **Input format:** the frontend accepts plain decimals only (`12`, `-3.5`, `.5`). Exponent notation (`1e5`), decimal commas (`1,5`), hex, `Infinity` and `NaN` are rejected. The API accepts any finite JSON number.
 - **Stateless:** each request is independent. There is no history, persistence or authentication.
 - **Duplicated operation list:** the frontend (`src/operations.ts`) and backend (`internal/calc`) each define the supported operations. Adding an operation means updating both.
-- **Not included:** request body size limits, health checks, and CORS (not needed with the dev proxy).
+- **Not included:** request body size limits, health checks, and CORS (not needed, because requests go through the development proxy or the nginx proxy on the same origin).
 
 ## Possible improvements
 
